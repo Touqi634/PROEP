@@ -23,30 +23,31 @@ namespace webApp.Test.API.Controllers
             User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
             User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
 
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
             List<User> blockedFriends = new List<User>();
             blockedFriends.Add(friend);
 
             Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId, IsBlocked = true };
-            
 
-            using (MsSqlContext context = NewContext)
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
-                context.Friendships.Add(friendship);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
-
-                await controller.BlockUser(userId, friendId);
+                await controller.BlockUser(friendId);
 
                 // Act
-                var response = await controller.GetBlockedUsers(userId);
+                var response = await controller.GetBlockedUsers();
 
                 // Assert
                 response.Should().BeOfType<ActionResult<IEnumerable<User>>>();
@@ -63,21 +64,22 @@ namespace webApp.Test.API.Controllers
             // Arrange
             User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
             User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-
-            using (MsSqlContext context = NewContext)
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
-
                 // Act
-                var response = await controller.GetBlockedUsers(userId);
+                var response = await controller.GetBlockedUsers();
 
                 // Assert
                 response.Should().BeOfType<ActionResult<IEnumerable<User>>>();
@@ -85,30 +87,6 @@ namespace webApp.Test.API.Controllers
             }
         }
 
-        [Theory]
-        [InlineData("userid1")]
-        [InlineData("userid2")]
-        [InlineData("userid3")]
-        public async Task GetBlockedUsers_ShouldReturnEmptyListWhenUserDoesNotExist(string userId)
-        {
-            // Arrange
-            using (MsSqlContext context = NewContext)
-            {
-                context.SaveChanges();
-            }
-
-            using (MsSqlContext context = NewContext)
-            {
-                BlockController controller = new BlockController(context);
-
-                // Act
-                var response = await controller.GetBlockedUsers(userId);
-
-                // Assert
-                response.Should().BeOfType<ActionResult<IEnumerable<User>>>();
-                response.Value.Should().BeEmpty();
-            }
-        }
 
         [Theory]
         [InlineData("userid1", "userid2")]
@@ -119,25 +97,27 @@ namespace webApp.Test.API.Controllers
             // Arrange
             User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
             User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
             Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId };
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
-                context.Friendships.Add(friendship);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
-                
+
                 // Act
-                var response = await controller.BlockUser(userId, friendId);
+                var response = await controller.BlockUser( friendId);
 
                 // Assert
                 response.Should().BeOfType<StatusCodeResult>();
@@ -145,37 +125,7 @@ namespace webApp.Test.API.Controllers
             }
         }
 
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task BlockUser_ShouldReturnBadRequestWithNonExistingUser(string userId, string friendId)
-        {
-            // Arrange
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-            Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId, IsBlocked = true };
-
-            using (MsSqlContext context = NewContext)
-            {
-                context.Users.Add(friend);
-
-                context.Friendships.Add(friendship);
-
-                context.SaveChanges();
-            }
-
-            using (MsSqlContext context = NewContext)
-            {
-                BlockController controller = new BlockController(context);
-
-                // Act
-                var response = await controller.BlockUser(userId, friendId);
-
-                // Assert
-                response.Should().BeOfType<BadRequestObjectResult>();
-                ((BadRequestObjectResult)response).Value.Should().BeEquivalentTo("User does not exist.");
-            }
-        }
+       
 
         [Theory]
         [InlineData("userid1", "userid2")]
@@ -186,22 +136,24 @@ namespace webApp.Test.API.Controllers
             // Arrange
             User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
             Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId, IsBlocked = true };
-
-            using (MsSqlContext context = NewContext)
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
+                await context.Users.AddAsync(user);
 
-                context.Friendships.Add(friendship);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
 
                 // Act
-                var response = await controller.BlockUser(userId, friendId);
+                var response = await controller.BlockUser(friendId);
 
                 // Assert
                 response.Should().BeOfType<BadRequestObjectResult>();
@@ -218,21 +170,23 @@ namespace webApp.Test.API.Controllers
             // Arrange
             User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
             User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-
-            using (MsSqlContext context = NewContext)
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
 
                 // Act
-                var response = await controller.BlockUser(userId, friendId);
+                var response = await controller.BlockUser( friendId);
 
                 // Assert
                 response.Should().BeOfType<NotFoundObjectResult>();
@@ -249,25 +203,27 @@ namespace webApp.Test.API.Controllers
             // Arrange
             User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
             User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
             Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId, IsBlocked = true };
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
-                context.Friendships.Add(friendship);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
 
                 // Act
-                var response = await controller.BlockUser(userId, friendId);
+                var response = await controller.BlockUser( friendId);
 
                 // Assert
                 response.Should().BeOfType<ConflictObjectResult>();
@@ -282,61 +238,42 @@ namespace webApp.Test.API.Controllers
         public async Task UnblockUser_ShouldReturnNoContentWhenSucceeds(string userId, string friendId)
         {
             // Arrange
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            Parent parent = new Parent() { UserId = "parent", Username = "userparent", DateOfBirth = new DateTime(1998, 08, 17) };
 
+            Child user = new Child() { UserId = userId, Username = "user",ParentId = parent.UserId, Parent = parent, DateOfBirth = new DateTime(1998, 08, 17) };
+
+            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(parent, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
             Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId, IsBlocked = true };
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(parent);
+                await context.Users.AddAsync(friend);
 
-                context.Friendships.Add(friendship);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
 
                 // Act
-                var response = await controller.UnblockUser(userId, friendId);
+                var response = await controller.UnblockUser(userId,friendId);
 
                 // Assert
+                // It only should pass with the parent of the child being the one making the request
+
                 response.Should().BeOfType<NoContentResult>();
             }
         }
 
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task UnblockUser_ShouldReturnBadRequestWithNonExistingUser(string userId, string friendId)
-        {
-            // Arrange
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-
-            using (MsSqlContext context = NewContext)
-            {
-                context.Users.Add(friend);
-
-                context.SaveChanges();
-            }
-
-            using (MsSqlContext context = NewContext)
-            {
-                BlockController controller = new BlockController(context);
-
-                // Act
-                var response = await controller.UnblockUser(userId, friendId);
-
-                // Assert
-                response.Should().BeOfType<BadRequestObjectResult>();
-                ((BadRequestObjectResult)response).Value.Should().BeEquivalentTo("User does not exist.");
-            }
-        }
+        
 
         [Theory]
         [InlineData("userid1", "userid2")]
@@ -345,20 +282,25 @@ namespace webApp.Test.API.Controllers
         public async Task UnblockUser_ShouldReturnBadRequestWithNonExistingFriend(string userId, string friendId)
         {
             // Arrange
-            User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            Parent parent = new Parent() { UserId = "parent", Username = "userparent", DateOfBirth = new DateTime(1998, 08, 17) };
 
-            using (MsSqlContext context = NewContext)
+            Child user = new Child() { UserId = userId, Username = "user", ParentId = parent.UserId, Parent = parent, DateOfBirth = new DateTime(1998, 08, 17) };
+
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(parent, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
+                await context.Users.AddAsync(parent);
+                await context.Users.AddAsync(user);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
-
-                await controller.BlockUser(userId, friendId);
+                await controller.BlockUser( friendId);
 
                 // Act
                 var response = await controller.UnblockUser(userId, friendId);
@@ -376,21 +318,26 @@ namespace webApp.Test.API.Controllers
         public async Task UnblockUser_ShouldReturnNotFoundWhenFriendshipDoesntExist(string userId, string friendId)
         {
             // Arrange
-            User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            Parent parent = new Parent() { UserId = "parent", Username = "userparent", DateOfBirth = new DateTime(1998, 08, 17) };
 
-            using (MsSqlContext context = NewContext)
+            Child user = new Child() { UserId = userId, Username = "user", ParentId = parent.UserId, Parent = parent, DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(parent, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(parent);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
-                await controller.BlockUser(userId, friendId);
+                await controller.BlockUser( friendId);
 
                 // Act
                 var response = await controller.UnblockUser(userId, friendId);
@@ -408,25 +355,29 @@ namespace webApp.Test.API.Controllers
         public async Task UnblockUser_ShouldReturnConflictWhenFriendshipNotBlocked(string userId, string friendId)
         {
             // Arrange
-            User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            Parent parent = new Parent() { UserId = "parent", Username = "userparent", DateOfBirth = new DateTime(1998, 08, 17) };
 
+            Child user = new Child() { UserId = userId, Username = "user", ParentId = parent.UserId, Parent = parent, DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            BlockController controller = new BlockController(NewContext);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(parent, ref controllerBase);
+            List<User> blockedFriends = new List<User>();
             Friendship friendship = new Friendship() { UserId = userId, FriendId = friendId };
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(parent);;
+                await context.Users.AddAsync(user);;
+                await context.Users.AddAsync(friend);
 
-                context.Friendships.Add(friendship);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                BlockController controller = new BlockController(context);
-
                 // Act
                 var response = await controller.UnblockUser(userId, friendId);
 

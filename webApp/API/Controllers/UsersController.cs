@@ -1,17 +1,20 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using webApp.Data;
 using webApp.Models;
+using webApp.Data;
+using System;
+using System.Security.Claims;
 
 namespace webApp.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly MsSqlContext _context;
@@ -21,7 +24,14 @@ namespace webApp.API.Controllers
             _context = context;
         }
 
-        // GET: api/Users
+         // GET: api/Users
+         /// <summary>
+         /// Gets a list of all users.
+         /// </summary>
+         /// <remarks>
+         ///    GET /api/Users
+         /// </remarks>
+         /// <returns></returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
@@ -42,14 +52,28 @@ namespace webApp.API.Controllers
             return user;
         }
 
-        // PUT: api/Users/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(string id, User user)
+        /// <summary>
+        /// Edit a User.
+        /// </summary>
+        /// <remarks>
+        ///     POST /api/Users/{id}
+        ///     {
+        ///         {user}
+        ///     }
+        /// </remarks>
+        /// <param name="user"></param>
+        /// <returns>No content</returns>
+        /// <response code="201">Returns no content on successful change</response>
+        /// <response code="404">If the user ID does not exist</response>
+        /// <response code="400">If the user ID does not belong to the user to be changed</response>
+        [HttpPut]
+        public async Task<IActionResult> PutUser(User user)
         {
+            var id = Utils.GetCurrentUserId(this);
             if (id != user.UserId)
             {
-                return BadRequest();
+                return Unauthorized();
             }
 
             _context.Entry(user).State = EntityState.Modified;
@@ -58,16 +82,14 @@ namespace webApp.API.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
                 if (!UserExists(id))
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
 
             return NoContent();
@@ -75,24 +97,48 @@ namespace webApp.API.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        /// <summary>
+        /// Create a user of type Parent
+        /// </summary>
+        /// <remarks>
+        ///     Post /api/Users
+        ///     {
+        ///         {user}
+        ///     }
+        /// </remarks>
+        /// <param name="user"></param>
+        /// <response code="201">User created</response>
+        /// <response code="400">Validation errors</response>
+        /// <response code="409">User already exists</response>
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public async Task<ActionResult<User>> PostUser(Parent user)
         {
-            _context.Users.Add(user);
+            var id = Utils.GetCurrentUserId(this);
+            if (id != user.UserId)
+            {
+                return Unauthorized();
+            }
+            List<ValidationResult> validationResults = new List<ValidationResult>();
+            ValidationContext validationContext = new ValidationContext(user);
+
+            if (!Validator.TryValidateObject(user, validationContext, validationResults, true))
+            {
+                return BadRequest(validationResults);
+            }
+            
+            await _context.Parents.AddAsync(user);
             try
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateException)
+            catch (Exception)
             {
                 if (UserExists(user.UserId))
                 {
                     return Conflict();
                 }
-                else
-                {
-                    throw;
-                }
+
+                throw;
             }
 
             return CreatedAtAction("GetUser", new { id = user.UserId }, user);

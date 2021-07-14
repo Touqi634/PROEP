@@ -1,0 +1,170 @@
+<div id="group" class="page-layout carded fullwidth">
+    <!-- TOP BACKGROUND -->
+    <div class="top-bg accent"></div>
+    <!-- / TOP BACKGROUND -->
+
+    <!-- CENTER -->
+    <div class="center">
+
+        <!-- CONTENT CARD -->
+        <div class="content-card"  style="margin-top: 50px;">
+
+            <!-- CONTENT -->
+            <div class="content">
+                <mat-tab-group (selectedTabChange)="onTabChanged($event)" [selectedIndex]="selectedTab.value" (selectedIndexChange)="selectedTab.setValue($event)" #tabGroup mat-align-tabs="center" style="font-size: 17px;">
+                    <!--DASHBOARD-->
+                    <mat-tab label="Messages">
+                        <div class="chat-page">
+                            <div class="chat-box">
+                            <app-contacts-list
+                            (userSelected)="onUserSelected($event)"
+                            ></app-contacts-list>
+                              <app-messages-view
+                              [chatlog]="chatlog"
+                              [selectedUserName]="selectedUser?.username"
+                              (sendMessage)="onSendMessage($event)"
+                              ></app-messages-view>
+                            </div>
+                          </div>
+                    </mat-tab>
+                    <!--END OF DASHBOARD-->
+                    <!--MONITOR-->
+                    <mat-tab label="Monitor">
+                        <!-- <mat-form-field appearance="fill" style="width: 250px;">
+                            <mat-label>Child</mat-label>
+                            <mat-select [(ngModel)]="selectedChild" formControlName="myChildren" name="myChildren" (selectionChange)="changeValue($event)" ngDefaultControl >
+                              <mat-option *ngFor="let child of children" [value]="child.value">
+                                {{child.value}}
+                              </mat-option>
+                            </mat-select>
+                          </mat-form-field> -->
+                            <div class="chat-page">
+                                <div class="chat-box">
+                                    <app-child-list
+                                     (childSelected)="onChildSelected($event)"
+                                     ></app-child-list>
+                                    <app-child-contact
+                                    [child]="selectedChild"
+                                    (userSelected)="onChildFriendSelected($event)"
+                                     ></app-child-contact>
+                                     <app-messages-monitor
+                                     [chatlog]="chatofChild"
+                                    [selectedUserName]="selectedChildFriend"
+                                    (sendMessage)="onSendMessage($event)"
+                                     ></app-messages-monitor>
+                                    </div>
+                                   </div>                      
+                    </mat-tab>
+                    <!--END OF MONITOR-->
+                    <!--CHILDREN OVERVIEW-->
+                    <mat-tab label="Children overview">
+                        <div class="tab-content p-24" fxFlex="100">
+                            <h2>Click on your child to see their friends list.</h2>
+                            <mat-table [dataSource]="dataSourceChild" class="products-table" #table matSort >
+                                <ng-container matColumnDef="ChildName">
+                                    <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                                    <mat-cell *matCellDef="let data" (click)="SelectedChild(data)">
+                                        {{data.username}}
+                                        <!--data | json-->
+                                    </mat-cell>
+                                </ng-container>
+                                <ng-container matColumnDef="DOB">
+                                    <mat-header-cell *matHeaderCellDef> Date Of Birth </mat-header-cell>
+                                    <mat-cell *matCellDef="let data">
+                                        {{data.dateOfBirth | slice:0:10}}
+                                    </mat-cell>
+                                </ng-container>
+
+                                <ng-container matColumnDef="btnDelete">
+                                    <mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                                    <mat-cell *matCellDef="let data">
+                                        <button mat-raised-button color="warn" (click)="BtnRemoveChild(data)">
+                                            <span>Remove</span>
+                                        </button>
+                                    </mat-cell>
+                                </ng-container>        
+
+                                <mat-header-row *matHeaderRowDef="displayedColumnsChild; sticky:true"></mat-header-row>
+                        
+                                <mat-row *matRowDef="let row; columns: displayedColumnsChild;"
+                                            matRipple>
+                                </mat-row>
+                            </mat-table>
+                        
+                            <mat-paginator #paginatorChild
+                                            [length]="paginatorChild.length"
+                                            [pageSizeOptions]="[5, 10, 25, 100]">
+                            </mat-paginator>
+                            
+                            <button mat-raised-button class="save-product-button" (click)="AddChild()">
+                                <span>Add child</span>
+                            </button>
+                        </div>
+                    </mat-tab>
+                    <!--END OF Children OVERVIEW-->
+                    <!--FRIENDS OVERVIEW-->
+                    <mat-tab label="Friends overview">
+                        <div class="tab-content p-24" fxFlex="100">
+                            <mat-table [dataSource]="dataSourceFriend" class="products-table" #table matSort >
+                                <ng-container matColumnDef="FriendName">
+                                    <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                                    <mat-cell *matCellDef="let data" (click)="SelectedChild(data)">
+                                        {{data.username}}
+                                    </mat-cell>
+                                </ng-container>
+
+                                <ng-container matColumnDef="DOB">
+                                    <mat-header-cell *matHeaderCellDef> Date Of Birth </mat-header-cell>
+                                    <mat-cell *matCellDef="let data">
+                                        {{data.dateOfBirth | slice:0:10}}
+                                    </mat-cell>
+                                </ng-container>                                
+
+                                <ng-container matColumnDef="btnUnblockFriend">
+                                    <mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                                    <mat-cell *matCellDef="let data">
+                                        <button mat-raised-button color="white" (click)="BtnUnblockFriend(data)">
+                                            <span>Unblock friend</span>
+                                        </button>
+                                    </mat-cell>
+                                </ng-container> 
+
+                                <ng-container matColumnDef="btnBlockFriend">
+                                    <mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                                    <mat-cell *matCellDef="let data">
+                                        <button mat-raised-button color="white" (click)="BtnBlockFriend(data)">
+                                            <span>Block friend</span>
+                                        </button>
+                                    </mat-cell>
+                                </ng-container>  
+
+                                <ng-container matColumnDef="btnDelete">
+                                    <mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                                    <mat-cell *matCellDef="let keyword">
+                                        <button mat-raised-button color="warn">
+                                            <span>Remove</span>
+                                        </button>
+                                    </mat-cell>
+                                </ng-container>        
+
+                                <mat-header-row *matHeaderRowDef="displayedColumnsFriends; sticky:true"></mat-header-row>
+                        
+                                <mat-row *matRowDef="let row; columns: displayedColumnsFriends;"
+                                            matRipple>
+                                </mat-row>
+                            </mat-table>
+                        
+                            <mat-paginator #paginatorFriend
+                                            [length]="paginatorFriend.length"
+                                            [pageSizeOptions]="[5, 10, 25, 100]">
+                            </mat-paginator>
+                        </div>
+                    </mat-tab>
+                    <!--END OF FRIENDS OVERVIEW-->
+                </mat-tab-group>
+            </div>
+            <!-- / CONTENT -->
+        </div>
+        <!-- / CONTENT CARD -->
+    </div>
+</div>

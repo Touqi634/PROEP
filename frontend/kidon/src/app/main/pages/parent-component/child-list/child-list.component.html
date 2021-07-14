@@ -1,0 +1,16 @@
+<div class="main">
+    <div class="contacts-title">Child</div>
+    <ul>
+      <li
+        *ngFor="let child of contactsService.children"
+        (click)="onChildSelected(child)"
+        [ngClass]="{ active: child.userId === selectedChild?.userId }"
+      >
+        <div class="contacts-info">
+          <span class="status-title">{{ child.username }}</span>
+          <!-- <span class="status-text">{{ contact.statusMessage }}</span> -->
+        </div>
+      </li>
+    </ul>
+  </div>
+  

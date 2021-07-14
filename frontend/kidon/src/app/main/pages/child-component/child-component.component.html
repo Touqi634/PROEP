@@ -1,0 +1,109 @@
+<div id="group" class="page-layout carded fullwidth">
+    <!-- TOP BACKGROUND -->
+    <div class="top-bg accent"></div>
+    <!-- / TOP BACKGROUND -->
+
+     <!-- CENTER -->
+    <div class="center">
+
+        <!-- CONTENT CARD -->
+        <div class="content-card"  style="margin-top: 50px;">
+
+             <!-- CONTENT -->
+             <div class="content">
+                <mat-tab-group (selectedTabChange)="onTabChanged($event)">
+                    <mat-tab label="Messages">
+                      <div class="chat-page">
+                        <div class="chat-box">
+                        <app-contacts-list
+                        (userSelected)="onUserSelected($event)"
+                        ></app-contacts-list>
+                          <app-messages-view
+                          [chatlog]="chatlog"
+                          [selectedUserName]="selectedUser?.username"
+                          (sendMessage)="onSendMessage($event)"
+                          ></app-messages-view>
+                        </div>
+                      </div>
+                    </mat-tab>
+                    <mat-tab label="Profile">
+                        <!-- Profile Card -->
+                        <div class="container">
+                        <div fxLayout="row" >
+                        <mat-card class="profile-card">
+                            <mat-card-header>
+                              <div mat-card-avatar class="profile-header-image"></div>
+                              <mat-card-title>{{currentUser.UserName}}</mat-card-title>
+                            </mat-card-header>
+                            <br>
+                            <mat-card-subtitle ><b>Account ID:</b> {{currentUser.UserId}}</mat-card-subtitle>
+                            <mat-card-subtitle><b>Email: </b>      {{currentUser.Email}}   </mat-card-subtitle>
+                            <mat-card-actions>
+                                <!--<button mat-button>EDIT</button>-->
+                              </mat-card-actions>
+                          </mat-card>                        
+                          </div>
+                          </div>  
+                    </mat-tab>
+
+                     <!--FRIENDS OVERVIEW-->
+                     <mat-tab label="Friends overview">
+                      <div class="tab-content p-24" fxFlex="100">
+                          <mat-table [dataSource]="dataSourceFriend" class="products-table" #table matSort >
+                              <ng-container matColumnDef="FriendName">
+                                  <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                                  <mat-cell *matCellDef="let data" (click)="SelectedChild(data)">
+                                      {{data.username}}
+                                  </mat-cell>
+                              </ng-container>
+
+                              <ng-container matColumnDef="DOB">
+                                  <mat-header-cell *matHeaderCellDef> Date Of Birth </mat-header-cell>
+                                  <mat-cell *matCellDef="let data">
+                                      {{data.dateOfBirth | slice:0:10}}
+                                  </mat-cell>
+                              </ng-container>    
+
+                              <ng-container matColumnDef="btnBlockFriend">
+                                  <mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                                  <mat-cell *matCellDef="let data">
+                                      <button mat-raised-button color="white" (click)="BtnBlockFriend(data)">
+                                          <span>Block friend</span>
+                                      </button>
+                                  </mat-cell>
+                              </ng-container>  
+
+                              <ng-container matColumnDef="btnDelete">
+                                  <mat-header-cell *matHeaderCellDef> </mat-header-cell>
+                                  <mat-cell *matCellDef="let data">
+                                      <button mat-raised-button color="warn" (click)="BtnDeleteFriend(data)">
+                                          <span>Remove</span>
+                                      </button>
+                                  </mat-cell>
+                              </ng-container>        
+
+                              <mat-header-row *matHeaderRowDef="displayedColumnsFriends; sticky:true"></mat-header-row>
+                      
+                              <mat-row *matRowDef="let row; columns: displayedColumnsFriends;"
+                                          matRipple>
+                              </mat-row>
+                          </mat-table>
+                      
+                          <mat-paginator #paginatorFriend
+                                          [length]="paginatorFriend.length"
+                                          [pageSizeOptions]="[5, 10, 25, 100]">
+                          </mat-paginator>
+
+                          <button mat-raised-button class="save-product-button" (click)="AddFriend()">
+                            <span>Add friend</span>
+                          </button>
+                      </div>
+                  </mat-tab>
+                  <!--END OF FRIENDS OVERVIEW-->
+                  </mat-tab-group>
+
+                </div>
+
+        </div>
+
+        </div>

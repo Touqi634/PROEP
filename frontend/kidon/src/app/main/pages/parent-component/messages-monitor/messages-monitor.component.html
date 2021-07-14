@@ -1,0 +1,36 @@
+<ng-template #noMessages>
+    <div class="no-messages">
+      <span class="title">No messages</span>
+      <span class="info">Your child hasn't chated with the user.</span>
+    </div>
+  </ng-template>
+  
+  <div class="main">
+    <div class="user-info">{{ selectedUserName?.username }}</div>
+    <div
+      *ngIf="chatlog && chatlog[0]; else noMessages"
+      class="messages-container"
+      #scrollMe
+    >
+      <ul>
+        <li
+          *ngFor="let chat of chatlog"
+          [style.flex-direction]="
+          chat.sender.userId !== selectedUserName?.userId
+              ? 'row-reverse'
+              : 'row'
+          "
+        >
+          <span
+            [ngClass]="
+            chat.sender.userId !== selectedUserName?.userId
+                ? 'speech-bubble-own'
+                : 'speech-bubble'
+            "
+            >{{ chat.content }}</span
+          >
+        </li>
+      </ul>
+    </div>
+  </div>
+  

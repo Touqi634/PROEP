@@ -1,0 +1,91 @@
+.profile-card {
+  max-width: 400px;
+  margin: 10px;
+  border: 1px solid #e2dddd;
+  box-shadow: none !important;
+  min-width: 320px;
+  border-radius: 10px;
+  }
+  
+  .profile-header-image {
+    background-image: url('https://deserthillsdentallv.com/wp-content/uploads/2013/07/happy-kids-brush.jpg');
+    background-size: cover;
+  }
+
+  .separator {
+    font-size: 15px;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50px;
+  }
+
+  input#message {
+    background:none;
+    border:none;
+    border-bottom: 1px solid #4C4C4C;
+    outline:none;
+    box-shadow:none;
+    color: black;
+    font-size:1.6em;
+    font-weight:300;
+    //margin-bottom: 3em;
+    padding:1.2em 0;
+}
+
+.chat-container {
+    display:block;
+    width:100%;
+}
+// .chat-container:nth-child(4) {
+//     opacity: .8;
+// }
+// .chat-container:nth-child(3) {
+//     opacity: .6;
+// }
+// .chat-container:nth-child(2) {
+//     opacity: .4;
+// }
+
+.chat-container a {
+    text-transform: uppercase;
+    font-weight:bold;
+    color:black;
+    font-size:.8em;
+    letter-spacing:2px;
+}
+
+.chat-page {
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+}
+
+.chat-box {
+  display: flex;
+  align-items: stretch;
+  background: #fffffe;
+  box-shadow: 0px 2px 10px rgba(45, 49, 63, 0.357436);
+  border-radius: 6px;
+  margin: 15px auto 10px;
+  max-width: 800px;
+  width: calc(100% - 20px);
+  height: 500px;
+  max-height: calc(100% - 20px)
+}
+
+.chat-container p {
+  background: #323035;
+  border: 1px solid gray;
+  border-radius: 10px;
+  padding: 1.1em;
+  max-width: auto;
+  max-width: 250px;
+  color: white;
+  margin: 5px 0 10px 0;
+}

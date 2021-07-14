@@ -19,6 +19,31 @@ namespace webApp.Migrations
                 .HasAnnotation("ProductVersion", "5.0.4")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+            modelBuilder.Entity("webApp.Models.FlaggedMessage", b =>
+                {
+                    b.Property<int>("FlaggedMessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("FlaggedMessageId");
+
+                    b.HasIndex("SenderID");
+
+                    b.ToTable("FlaggedMessage");
+                });
+
             modelBuilder.Entity("webApp.Models.Friendship", b =>
                 {
                     b.Property<string>("UserId")
@@ -79,6 +104,39 @@ namespace webApp.Migrations
                     b.ToTable("Message");
                 });
 
+            modelBuilder.Entity("webApp.Models.TimeRestriction", b =>
+                {
+                    b.Property<int>("RestrictionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("RestrictedUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("RestrictionId");
+
+                    b.HasIndex("RestrictedUserId");
+
+                    b.ToTable("TimeRestriction");
+                });
+
             modelBuilder.Entity("webApp.Models.User", b =>
                 {
                     b.Property<string>("UserId")
@@ -131,6 +189,17 @@ namespace webApp.Migrations
                     b.ToTable("Parent");
                 });
 
+            modelBuilder.Entity("webApp.Models.FlaggedMessage", b =>
+                {
+                    b.HasOne("webApp.Models.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("webApp.Models.Friendship", b =>
                 {
                     b.HasOne("webApp.Models.User", "Friend")
@@ -166,6 +235,17 @@ namespace webApp.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("webApp.Models.TimeRestriction", b =>
+                {
+                    b.HasOne("webApp.Models.Child", "RestrictedUser")
+                        .WithMany("TimeRestrictions")
+                        .HasForeignKey("RestrictedUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RestrictedUser");
+                });
+
             modelBuilder.Entity("webApp.Models.Child", b =>
                 {
                     b.HasOne("webApp.Models.Parent", "Parent")
@@ -197,6 +277,11 @@ namespace webApp.Migrations
                     b.Navigation("Friends");
 
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("webApp.Models.Child", b =>
+                {
+                    b.Navigation("TimeRestrictions");
                 });
 
             modelBuilder.Entity("webApp.Models.Parent", b =>

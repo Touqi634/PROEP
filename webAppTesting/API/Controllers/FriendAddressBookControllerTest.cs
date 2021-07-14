@@ -1,102 +1,67 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 using webApp.API.Controllers;
 using webApp.Test.Utilities;
+using webApp.Resources;
 using FluentAssertions;
 using webApp.Models;
 using webApp.Data;
+using System.Linq;
 using System;
 using Xunit;
-using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace webApp.Test
 {
     public class FriendAddressBookControllerTest : DatabaseTest
     {
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task AddFriend_ShouldReturn201WhenSucceeds(string userId, string friendId)
+        [Fact]
+        public async Task AddFriend_ShouldReturn201WhenSucceeds()
         {
-            // Arrange
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = "friendid", Username = "friend", DateOfBirth = new DateTime(1998, 07, 17), Email = "friend@mail.com" };
 
-            using (MsSqlContext context = NewContext)
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext,mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.AddFriend("friend@mail.com");
 
-                // Act
-                var response = await controller.AddFriend(userId, friendId);
-
-                // Assert
                 response.Should().BeOfType<StatusCodeResult>();
                 ((StatusCodeResult)response).StatusCode.Should().Equals(201);
             }
         }
 
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task AddFriend_ShouldReturnBadRequestWithNonExistingUser(string userId, string friendId)
+        [Fact]
+        public async Task AddFriend_ShouldReturnNotFoundWithNonExistingFriend()
         {
-            // Arrange
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 07, 17) };
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
 
-            using (MsSqlContext context = NewContext)
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.AddFriend("friend@mail.com");
 
-                // Act
-                var response = await controller.AddFriend(userId, friendId);
-
-                // Assert
-                response.Should().BeOfType<BadRequestObjectResult>();
-                ((BadRequestObjectResult)response).Value.Should().BeEquivalentTo("User does not exist.");
-            }
-        }
-
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task AddFriend_ShouldReturnNotFoundWithNonExistingFriend(string userId, string friendId)
-        {
-            // Arrange
-            User user = new User() { UserId = userId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-
-            using (MsSqlContext context = NewContext)
-            {
-                context.Users.Add(user);
-
-                context.SaveChanges();
-            }
-
-            using (MsSqlContext context = NewContext)
-            {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
-
-                // Act
-                var response = await controller.AddFriend(userId, friendId);
-
-                // Assert
                 response.Should().BeOfType<NotFoundObjectResult>();
                 ((NotFoundObjectResult)response).Value.Should().BeEquivalentTo("Friend does not exist.");
             }
@@ -105,184 +70,239 @@ namespace webApp.Test
         [Fact]
         public async Task AddFriend_ShouldReturnConflictWhenFriendAlreadyAdded()
         {
-            // Arrange
-            string userId = "userid1";
-            string friendId = "userid2";
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = "friendid", Username = "friend", DateOfBirth = new DateTime(1998, 07, 17), Email = "friend@mail.com" };
+            Friendship friendship = new Friendship() { UserId = "userid", FriendId = "friendid" };
 
-            using (MsSqlContext context = NewContext)
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.AddFriend("friend@mail.com");
 
-                await controller.AddFriend(userId, friendId);
-
-                // Act & Assert
-                var response = await controller.AddFriend(userId, friendId);
-
-                // Assert
                 response.Should().BeOfType<ConflictObjectResult>();
                 ((ConflictObjectResult)response).Value.Should().BeEquivalentTo("User has already added this friend.");
             }
         }
 
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task RemoveFriend_ShouldReturnNoContentWhenSucceeds(string userId, string friendId)
+        [Fact]
+        public async Task RemoveFriend_ShouldReturnNoContentWhenSucceeds()
         {
             // Arrange
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = "friendid", Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            Friendship friendship = new Friendship() { UserId = "userid", FriendId = "friendid" };
 
-            using (MsSqlContext context = NewContext)
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.RemoveFriend("friendid");
 
-                await controller.AddFriend(userId, friendId);
-
-                // Act
-                var response = await controller.RemoveFriend(userId, friendId);
-
-                // Assert
                 response.Should().BeOfType<NoContentResult>();
             }
         }
 
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task RemoveFriend_ShouldReturnBadRequestWhenFriendshipDoesntExist(string userId, string friendId)
+        [Fact]
+        public async Task RemoveFriend_ShouldReturnBadRequestWhenFriendshipDoesntExist()
         {
-            // Arrange
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = "friendid", Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
 
-            using (MsSqlContext context = NewContext)
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.RemoveFriend("friendid");
 
-                // Act
-                var response = await controller.RemoveFriend(userId, friendId);
-
-                // Assert
                 response.Should().BeOfType<BadRequestObjectResult>();
                 ((BadRequestObjectResult)response).Value.Should().BeEquivalentTo("User has not added this friend yet.");
             }
         }
 
-        [Theory]
-        [InlineData("userid1", "userid2")]
-        [InlineData("userid2", "userid3")]
-        [InlineData("userid3", "userid4")]
-        public async Task GetFriends_ShouldReturnListOfFriends(string userId, string friendId)
+        [Fact]
+        public async Task GetFriends_ShouldReturnListOfFriends()
         {
             // Arrange
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
-            User friend = new User() { UserId = friendId, Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
-            List<User> friends = new List<User>();
-            friends.Add(friend);
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend = new User() { UserId = "friendid", Username = "friend", DateOfBirth = new DateTime(1998, 07, 17) };
+            Friendship friendship = new Friendship() { UserId = "userid", FriendId = "friendid" };
 
-            using (MsSqlContext context = NewContext)
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
-                context.Users.Add(friend);
+                await context.Users.AddAsync(user);
+                await context.Users.AddAsync(friend);
+                await context.Friendships.AddAsync(friendship);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.GetFriends();
 
-                await controller.AddFriend(userId, friendId);
-
-                // Act
-                var response = await controller.GetFriends(userId);
-
-                // Assert
-                response.Should().BeOfType<ActionResult<IEnumerable<User>>>();
-                response.Value.Should().BeEquivalentTo(friends);
+                response.Should().BeOfType<List<UserResource>>();
+                response.Should().HaveCount(1);
+                response.First().UserId.Should().Be("friendid");
             }
         }
 
-        [Theory]
-        [InlineData("userid1")]
-        [InlineData("userid2")]
-        [InlineData("userid3")]
-        public async Task GetFriends_ShouldReturnEmptyListWhenNoFriends(string userId)
+        [Fact]
+        public async Task GetFriends_ShouldReturnEmptyListWhenNoFriends()
         {
-            // Arrange
-            User user = new User() { UserId = userId, Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
+            User user = new User() { UserId = "userid", Username = "user", DateOfBirth = new DateTime(1998, 08, 17) };
 
-            using (MsSqlContext context = NewContext)
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(user, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.Users.Add(user);
+                await context.Users.AddAsync(user);
 
                 context.SaveChanges();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = await controller.GetFriends();
 
-                // Act
-                var response = await controller.GetFriends(userId);
-
-                // Assert
-                response.Should().BeOfType<ActionResult<IEnumerable<User>>>();
-                response.Value.Should().BeEmpty();
+                response.Should().BeOfType<List<UserResource>>();
+                response.Should().BeEmpty();
             }
         }
 
-        [Theory]
-        [InlineData("userid1")]
-        [InlineData("userid2")]
-        [InlineData("userid3")]
-        public async Task GetFriends_ShouldReturnEmptyListWhenUserDoesNotExist(string userId)
+        [Fact]
+        public async Task GetChildFriends_ShouldReturnTheFriendsOfASpecifiedChild()
         {
-            // Arrange
-            using (MsSqlContext context = NewContext)
+            Parent parent = new Parent() { UserId = "parentuserid", Username = "Parent", DateOfBirth = new DateTime(1998, 08, 17) };
+            Child child = new Child() { UserId = "childuserid", Username = "Child", ParentId = "parentuserid", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend1 = new User() { UserId = "friend1", Username = "Friend 1", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend2 = new User() { UserId = "friend2", Username = "Friend 2", DateOfBirth = new DateTime(1998, 08, 17) };
+            Friendship friendship1 = new Friendship() { UserId = "childuserid", FriendId = "friend1"};
+            Friendship friendship2 = new Friendship() { UserId = "childuserid", FriendId = "friend2" };
+
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(parent, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
             {
-                context.SaveChanges();
+                await context.Parents.AddAsync(parent);
+                await context.Children.AddAsync(child);
+                await context.Users.AddAsync(friend1);
+                await context.Users.AddAsync(friend2);
+                await context.Friendships.AddAsync(friendship1);
+                await context.Friendships.AddAsync(friendship2);
+
+                await context.SaveChangesAsync();
             }
 
-            using (MsSqlContext context = NewContext)
+            await using (MsSqlContext context = NewContext)
             {
-                FriendAddressBookController controller = new FriendAddressBookController(context);
+                var response = controller.GetChildFriends("childuserid");
 
-                // Act
-                var response = await controller.GetFriends(userId);
+                response.Result.Should().BeOfType<ActionResult<IEnumerable<UserResource>>>();
+                response.Result.Value.Should().HaveCount(2);
+                response.Result.Value.ToArray()[0].UserId.Should().Be("friend1");
+                response.Result.Value.ToArray()[1].UserId.Should().Be("friend2");
+            }
+        }
 
-                // Assert
-                response.Should().BeOfType<ActionResult<IEnumerable<User>>>();
-                response.Value.Should().BeEmpty();
+        [Fact]
+        public async Task GetChildFriends_ShouldReturnNotFoundIfChildDoesntExist()
+        {
+            Parent parent = new Parent() { UserId = "parentuserid" };
+            User friend1 = new User() { UserId = "friend1" };
+
+            await using (MsSqlContext context = NewContext)
+            {
+                await context.Parents.AddAsync(parent);
+                await context.Users.AddAsync(friend1);
+            }
+
+            await using (MsSqlContext context = NewContext)
+            {
+                FriendAddressBookController controller = new FriendAddressBookController(context, mapper);
+                var controllerBase = (ControllerBase)controller;
+                ActingAs(parent, ref controllerBase);
+
+                var response = controller.GetChildFriends("childuserid");
+
+                response.Result.Result.Should().BeOfType<NotFoundResult>();
+                response.Result.Value.Should().BeNullOrEmpty();
+            }
+        }
+
+        [Fact]
+        public async Task GetChildFriends_ShouldReturnUnauthorisedIfChildDoesNotBelongToActiveUser()
+        {
+            Parent imposter = new Parent() { UserId = "imposterparentuserid", Username = "Imposter Parent", DateOfBirth = new DateTime(1998, 08, 17) };
+            Parent parent = new Parent() { UserId = "parentuserid", Username = "Parent", DateOfBirth = new DateTime(1998, 08, 17) };
+            Child child = new Child() { UserId = "childuserid", Username = "Child", ParentId = "parentuserid", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend1 = new User() { UserId = "friend1", Username = "Friend 1", DateOfBirth = new DateTime(1998, 08, 17) };
+            User friend2 = new User() { UserId = "friend2", Username = "Friend 2", DateOfBirth = new DateTime(1998, 08, 17) };
+            Friendship friendship1 = new Friendship() { UserId = "childuserid", FriendId = "friend1" };
+            Friendship friendship2 = new Friendship() { UserId = "childuserid", FriendId = "friend2" };
+
+            FriendAddressBookController controller = new FriendAddressBookController(NewContext, mapper);
+            var controllerBase = (ControllerBase)controller;
+            ActingAs(imposter, ref controllerBase);
+
+            await using (MsSqlContext context = NewContext)
+            {
+                await context.Parents.AddAsync(parent);
+                await context.Children.AddAsync(child);
+                await context.Users.AddAsync(friend1);
+                await context.Users.AddAsync(friend2);
+                await context.Friendships.AddAsync(friendship1);
+                await context.Friendships.AddAsync(friendship2);
+
+                await context.SaveChangesAsync();
+            }
+
+            await using (MsSqlContext context = NewContext)
+            {
+                var response = controller.GetChildFriends("childuserid");
+
+                response.Result.Result.Should().BeOfType<UnauthorizedResult>();
+                response.Result.Value.Should().BeNullOrEmpty();
             }
         }
     }

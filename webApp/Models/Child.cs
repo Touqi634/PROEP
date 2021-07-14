@@ -1,11 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace webApp.Models
 {
     public class Child : User
     {
-        public string ParentId { get; set; }
         [Required]
+        public string ParentId { get; set; }
         public virtual Parent Parent { get; set; }
+        public IEnumerable<TimeRestriction> TimeRestrictions { get; set; }
     }
 }

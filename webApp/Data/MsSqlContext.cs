@@ -13,6 +13,8 @@ namespace webApp.Data
         public virtual DbSet<Child> Children { get; set; }
         public virtual DbSet<Friendship> Friendships { get; set; }
         public virtual DbSet<Message> Messages { get; set; }
+        public virtual DbSet<TimeRestriction> TimeRestrictions { get; set; }
+        public virtual DbSet<FlaggedMessage> FlaggedMessages { get; set; }
 
         public MsSqlContext(DbContextOptions<MsSqlContext> options) : base(options)
         {
@@ -25,6 +27,8 @@ namespace webApp.Data
             modelBuilder.ApplyConfiguration(new ChildEntityMap());
             modelBuilder.ApplyConfiguration(new FriendshipEntityMap());
             modelBuilder.ApplyConfiguration(new MessageEntityMap());
+            modelBuilder.ApplyConfiguration(new TimeRestrictionEntityMap());
+            modelBuilder.ApplyConfiguration(new FlaggedMessageEntityMap());
         }
 
         public override int SaveChanges()
